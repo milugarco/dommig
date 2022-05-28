@@ -32,10 +32,10 @@ const TotalValorP = (data = []) => {
 
 router.use(express.json());
 
-router.get("/client", (req, resp) => {
+router.get("/client", async (req, resp) => {
   var XLSX = require("xlsx");
   var workbook = XLSX.readFile(
-    path.join(__dirname, "arquivos", "cliente.xlsx")
+    path.join(__dirname, "arquivos", "cli.xlsx")
   );
   var workbookMunicipio = XLSX.readFile(
     path.join(__dirname, "arquivos", "cidades.xlsx")
@@ -116,6 +116,8 @@ router.get("/client", (req, resp) => {
     //console.log(data);
   });
 
+  
+
   const connection = mysql.createConnection({
     host: "127.0.0.1",
     port: 3309,
@@ -127,12 +129,15 @@ router.get("/client", (req, resp) => {
   });
 
   for (let index = 0; index < arrayClientes.length; index++) {
+
     const cliente = arrayClientes[index];
     
     let tipo = cliente.TIPO == "J" ? "Juridica" : "Fisica"
     
     let cidade = arrayMunicipio.filter(m => m.CODIGO == cliente.CIDADE);
     console.log(cidade);
+
+    let doc = cliente.CPF ? String(cliente.CPF).padStart(11,'0') : cliente.CNPJ ? String(cliente.CNPJ).padStart(14,'0') : "NULL"
     
     let fone = cliente.FONE ? `"${String(cliente.FONE).replaceAll(" ", "").substr(0, 13)}"` : "NULL"
 
@@ -141,12 +146,16 @@ router.get("/client", (req, resp) => {
     let query2 = `Insert into cad_cliente_fornecedor (Id, Pesseoa_J_F, tipo_cliente_fornecedor,
                   status, DT_Cad, Nome_Fantasia, CNPJ_CPF, Fone_Comerc, Fone_Cel, Endereco_rua_Av, Bairro, 
                   UF, Razao_social_SobreNome, Num_Endereco,Cod_Municipio, CEP) values ("${cliente.CODIGO}","${tipo}", "Cliente", 
-                  "Ativo", "2022-03-12", "${cliente.NOME}", ${cliente.CPF ? `"${cliente.CPF}"` : cliente.CNPJ ? `"${cliente.CNPJ}"` : "NULL"},
+                  "Ativo", "2022-03-12","${cliente.NOME}", "${doc}",
                   ${fone}, ${celular}, "${cliente.ENDERECO ? cliente.ENDERECO : "Rua"}", ${cliente.BAIRRO ? `"${cliente.BAIRRO}"` : 'NULL'},
                   "PR", "${String(cliente.NOME).substring(0, 60)}", ${cliente.NUMERO ? `"${cliente.NUMERO}"` : "NULL"},
                   ${cidade[0].IBGEMUNI},"86870-000")`;
+                  console.log(query2)
 
-    connection.query(query2, (error, results, fields) => {
+   await connection.query(query2, (error, results, fields) => {
+      console.log(error)
+      console.log(results)
+
       if (error) {
         console.error(error.message);
         return true;
@@ -158,9 +167,11 @@ router.get("/client", (req, resp) => {
         });
       }
     });
+
   }
 
   connection.end();
+
 });
 
 router.get("/mysqlcli", (req, resp) => {
@@ -345,7 +356,7 @@ router.get("/product", (req, resp) => {
   for (let index = 0; index < arrayProdutos.length; index++) {
     const produto = arrayProdutos[index];
 
-    let price = String(produto.PRECOVENDA).replace("000", "");
+    let price = parseFloat(produto.PRECOVENDA) / 1000;//.replace("0000", "");
     let priceV = price == "" ? "0" : String(price) == "undefined" ? "0" : price;
 
     let query2 = `Insert into cad_produtos (Id, Descricao, Preco_Venda, Num_Tamanho, Preco_Venda_aP,
