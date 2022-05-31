@@ -386,14 +386,14 @@ router.get("/venda/duplicata", (req, resp) => {
 
   var XLSX = require("xlsx");
   var workbookRECEBER = XLSX.readFile(
-    path.join(__dirname, "arquivos", "contareceber15.xlsx")
+    path.join(__dirname, "arquivos", "contareceber.xlsx")
   );
   var workbookCUPOM = XLSX.readFile(
-    path.join(__dirname, "arquivos", "cupom15.xlsx")
+    path.join(__dirname, "arquivos", "cupom.xlsx")
   );
 
   var workbookDUPLICATA = XLSX.readFile(
-    path.join(__dirname, "arquivos", "duplicata15.xlsx")
+    path.join(__dirname, "arquivos", "duplicata.xlsx")
   );
 
   var sheet_name_listRECEBER = workbookRECEBER.SheetNames;
@@ -995,7 +995,7 @@ router.get("/venda/receber", (req, resp) => {
 
   var XLSX = require("xlsx");
   var workbookRECEBER = XLSX.readFile(
-    path.join(__dirname, "arquivos", "contareceber15.xlsx")
+    path.join(__dirname, "arquivos", "contareceber.xlsx")
   );
 
   var sheet_name_listRECEBER = workbookRECEBER.SheetNames;
@@ -1046,7 +1046,7 @@ router.get("/venda/receber", (req, resp) => {
   for (let index = 0; index < arryRECEBER.length; index++) {
     const parcela = arryRECEBER[index];
 
-    if ((cClient == "") & (dEmissao == "")) {
+    if ((cClient == "") & (dEmissao == "")) {  
       cClient = parcela.CLIENTE;
       dEmissao = parcela.EMISSAO;
     } else {
@@ -1094,9 +1094,9 @@ router.get("/venda/receber", (req, resp) => {
   for (let indexR = 0; indexR < vendas.length; indexR++) {
     const venda = vendas[indexR];
     // MIGRA VENDA COM DUPLICATA
-    var valor = String(venda.VALOR).replace("000", "");
+    var valor = parseFloat(venda.VALOR)//.replace("000", "");
 
-    valor = String(valor).length > 3 ? valor / 1000 : valor;
+    valor = /* String(valor).length > 3 ? */ valor / 1000 //: valor / 1000;
 
     let query2 = `Insert into gerenciador_vendas (Id_Cliente, Data, Prim_Vencimento, Qtde_Parc_Receber, Situacao, Vlr_Receber, Id_vendedor, Total_Bruto, hr)
                 values (${venda.CLIENTE}, "${moment(
@@ -1105,9 +1105,7 @@ router.get("/venda/receber", (req, resp) => {
     ).format("YYYY-MM-DD")}","${moment(
       venda.parcelas[0].VENCIMENTO,
       "DD.MM.YYYY"
-    ).format("YYYY-MM-DD")}",  ${venda.parcelas.length}, 1, ${String(
-      venda.VALOR
-    ).replace("000", "")}, 1, ${valor}, "12:00:00"  )`;
+    ).format("YYYY-MM-DD")}",  ${venda.parcelas.length}, 1, ${valor}, 1, ${valor}, "12:00:00"  )`;
 
     connection.query(query2, (error, results, fields) => {
       if (error) {
@@ -1128,8 +1126,8 @@ router.get("/venda/receber", (req, resp) => {
           multipleStatements: true,
         });
 
-        var valorProd = String(venda.VALOR).replace("000", "");
-        valorProd = String(valorProd).length > 3 ? valorProd / 1000 : valorProd;
+        var valorProd = parseFloat(venda.VALOR);//.replace("000", "");
+        valorProd = /* String(valorProd).length > 3 ? */ valorProd / 1000 //: valorProd/1000;
 
         // MIGRA OS ITENS VENDA
         let query3 = `Insert into gerencia_itens_venda (Id_Venda,Id_Produto,Qtde,Preco,Desconto, Checado,Preco_Prazo,nItem,precoCusto,subTotal)
@@ -1164,8 +1162,8 @@ router.get("/venda/receber", (req, resp) => {
             multipleStatements: true,
           });
 
-          var valorPar = String(parcela.VALORORI).replace("000", "");
-          valorPar = String(valorPar).length > 3 ? valorPar / 1000 : valorPar;
+          var valorPar = parseFloat(parcela.VALORORI);//.replace("000", "");
+          valorPar = valorPar / 1000 //: valorPar/1000;
           //console.log(parcela);
 
           // MIGRA PARCELAS
